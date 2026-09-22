@@ -1,0 +1,100 @@
+[
+  {
+    "id": "TC1",
+    "ac": "AC1",
+    "text": "Given 租户已按 README 表格填好 Host/Token 并保存, When 打开 UniFi Access 连接器详情页, Then 状态为 Connected 且 Tools 列表非空",
+    "type": "manual",
+    "steps": [
+      "在 Integrations 页面新建 UniFi Access 连接，填入测试 controller 的 Host 与 API Token",
+      "保存并等待连接成功",
+      "点击该连接器卡片打开详情页"
+    ],
+    "expect": "详情页状态芯片显示 Connected；Tools 区域显示非零数量的工具（unifi_access_list_doors 等），点 Refresh Tools 不报错",
+    "result": "untested",
+    "notes": "需要真实/测试 UniFi Access controller 与已注册的 unifi-access integration，由开发棒执行"
+  },
+  {
+    "id": "TC2",
+    "ac": "AC2",
+    "text": "Given mock 的 controller 返回 2 个门, When 调用 unifi_access_list_doors, Then 返回的门清单条数、id、name、lock_state 与 mock 数据一致",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_doors_returns_mocked_doors"]
+  },
+  {
+    "id": "TC3",
+    "ac": "AC2",
+    "text": "Given mock 的 controller 返回空门列表, When 调用 unifi_access_list_doors, Then 返回空数组而不是错误",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_doors_empty_result_is_not_an_error"]
+  },
+  {
+    "id": "TC4",
+    "ac": "AC3",
+    "text": "Given mock 的 controller 对某门返回 3 条访问事件, When 调用 unifi_access_list_access_events(door_id), Then 返回的事件条数、time/actor/method/result 字段与 mock 数据一致",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_access_events_returns_mocked_events"]
+  },
+  {
+    "id": "TC5",
+    "ac": "AC3",
+    "text": "Given limit 传入 500（超过硬上限 200）, When 调用 unifi_access_list_access_events, Then 实际返回条数被截断到 200 且 has_more=true",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_list_access_events_limit_is_clamped_to_hard_cap"]
+  },
+  {
+    "id": "TC6",
+    "ac": "AC4",
+    "text": "Given mock 的 controller 对 unlock 请求返回成功, When 调用 unifi_access_unlock_door(door_id), Then 返回 door_id 与 unlocked=true",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_unlock_door_success_returns_unlocked_true"]
+  },
+  {
+    "id": "TC7",
+    "ac": "AC4",
+    "text": "Given 一扇真实测试门当前锁定, When 调用 unifi_access_unlock_door(door_id) 并随后调用 unifi_access_get_door, Then 门状态变为解锁",
+    "type": "manual",
+    "steps": [
+      "确认测试门当前为锁定状态（现场或摄像头确认）",
+      "通过 MCP client 携带真实测试凭据调用 unifi_access_unlock_door(door_id)",
+      "调用 unifi_access_get_door(door_id) 读取最新状态"
+    ],
+    "expect": "unlock 调用返回 unlocked=true；随后 get_door 返回的 lock_state 变为 unlocked（或现场/摄像头确认门已打开）",
+    "result": "untested",
+    "notes": "需要真实测试门与真实 controller，无测试环境时记'未执行·本地盲区·需真实 controller'，不得记 pass"
+  },
+  {
+    "id": "TC8",
+    "ac": "AC5",
+    "text": "Given 请求缺少 X-UniFi-Access-Token, When 调用 /mcp, Then 返回 401 且 body 列出缺失的 Header 名",
+    "type": "auto",
+    "tests": ["tests/test_middleware.py::test_missing_token_header_returns_401_with_header_name"]
+  },
+  {
+    "id": "TC9",
+    "ac": "AC5",
+    "text": "Given mock 的 controller 对该 Token 返回 401, When 调用任意工具, Then 返回结构化错误信封 code=unauthorized，不是裸异常或未分类 500，且 message 不包含 Token 原文",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_upstream_401_maps_to_unauthorized_envelope_without_leaking_token"]
+  },
+  {
+    "id": "TC10",
+    "ac": "AC6",
+    "text": "Given mock 的 controller 对不存在的 door_id 返回 404, When 调用 unifi_access_unlock_door, Then 返回结构化错误信封 code=not_found",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_unlock_nonexistent_door_returns_not_found"]
+  },
+  {
+    "id": "TC11",
+    "ac": "AC2",
+    "text": "Given 传入格式非法的 door_id（如空字符串）, When 调用 unifi_access_get_door, Then 返回结构化错误信封 code=invalid_argument 而不是 500 或裸异常",
+    "type": "auto",
+    "tests": ["tests/test_tools.py::test_get_door_with_invalid_id_returns_invalid_argument"]
+  },
+  {
+    "id": "TC12",
+    "ac": "AC7",
+    "text": "Given 两个并发请求分别携带租户 A、租户 B 各自的 Host/Token, When 同时调用 unifi_access_list_doors, Then 每个请求收到的门清单只对应各自请求携带的凭据所指向的 mock controller，两者互不串",
+    "type": "auto",
+    "tests": ["tests/test_middleware.py::test_concurrent_requests_keep_tenant_credentials_isolated"]
+  }
+]
