@@ -77,11 +77,11 @@ Links: [connect.mspbots.ai](https://connect.mspbots.ai) · [mspbots.ai](https://
 
 ## What this repo is for
 
-UniFi Access 门禁系统的 MCP server：供 agent 读取门禁数据/状态、执行开门等动作，注册进 mcp-service-gateway 的 vendor fleet
+UniFi Access door access control system MCP server: lets agents read access control data/status and perform actions such as opening doors; registered in the vendor fleet of mcp-service-gateway
 
 ## The constraint that must not be lost
 
-读写都要支持（read + action），且需求方明确要求一次性交付，不分阶段
+Both read and write must be supported (read + action), and the requester explicitly asked for one-shot delivery, not phased
 
 This is recorded here because it is the part of the requirement most
 easily lost between the ticket and the implementation.
